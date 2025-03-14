@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurDB - Norwegian Hiking Routes API</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding-bottom: 2rem;
+        }
+        .header {
+            background-color: #28a745;
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .code-block {
+            background-color: #f7f7f7;
+            border-left: 4px solid #28a745;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 5px 5px 0;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+        .endpoint {
+            background-color: #e9f5ea;
+            border-radius: 5px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding-top: 1rem;
+            border-top: 1px solid #dee2e6;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header text-center">
+        <div class="container">
+            <h1 class="display-4">TurDB API</h1>
+            <p class="lead">Norwegian Hiking Routes REST API</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-lg-8 offset-lg-2">
+                <h2>About TurDB</h2>
+                <p>
+                    TurDB is a REST API that provides information about hiking routes in Norway. 
+                    It allows you to find the closest hiking routes from given coordinates, helping hikers 
+                    discover new trails and plan their outdoor adventures.
+                </p>
+                <p>
+                    All data is sourced from <a href="https://kartkatalog.geonorge.no/metadata/turrutebasen/d1422d17-6d95-4ef1-96ab-8af31744dd63" target="_blank">Geonorge - Turrutebasen</a>,
+                    Norway's national mapping agency.
+                </p>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-8 offset-lg-2">
+                <h2>API Documentation</h2>
+                
+                <div class="endpoint">
+                    <h3>Get All Routes</h3>
+                    <p><strong>Endpoint:</strong> <code>/api/routes</code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <p><strong>Description:</strong> Retrieves a list of hiking routes.</p>
+                    <p><strong>Example Request:</strong></p>
+                    <div class="code-block">
+                        GET http://turdb.info.gf:3000/api/routes
+                    </div>
+                    <p><strong>Example Response:</strong></p>
+                    <div class="code-block">
+                        {<br>
+                        &nbsp;&nbsp;"features": [<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;{<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"rutenavn": ["Turruter i Nes"],<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"rutenummer": ["F_20181031_18"],<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"vedlikeholdsansvarlig": ["Nes kommune"],<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                        &nbsp;&nbsp;]<br>
+                        }
+                    </div>
+                </div>
+                
+                <div class="endpoint">
+                    <h3>Get Routes Near Coordinates</h3>
+                    <p><strong>Endpoint:</strong> <code>/api/routes/nearby</code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><code>lat</code> - Latitude (required)</li>
+                        <li><code>lng</code> - Longitude (required)</li>
+                        <li><code>limit</code> - Limit number of hikes to return (optional, default: 5)</li>
+                    </ul>
+                    <p><strong>Description:</strong> Retrieves hiking routes near the specified coordinates.</p>
+                    <p><strong>Example Request:</strong></p>
+                    <div class="code-block">
+                        GET http://turdb.info.gf:3000/api/routes/nearby?lat=59.66&lng=10.79&limit=5
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 offset-lg-2">
+                <h2>Usage Examples</h2>
+                <h4>Using JavaScript Fetch API:</h4>
+                <div class="code-block">
+                    fetch('http://turdb.info.gf:3000/api/routes')<br>
+                    &nbsp;&nbsp;.then(response => response.json())<br>
+                    &nbsp;&nbsp;.then(data => console.log(data))<br>
+                    &nbsp;&nbsp;.catch(error => console.error('Error:', error));
+                </div>
+
+                <h4>Using cURL:</h4>
+                <div class="code-block">
+                    curl -X GET http://turdb.info.gf:3000/api/routes
+                </div>
+                
+                <div class="footer text-center">
+                    <p>TurDB API - Created by Lennard Denby</p>
+                    <p>Data provided by <a href="https://kartkatalog.geonorge.no/metadata/turrutebasen/d1422d17-6d95-4ef1-96ab-8af31744dd63" target="_blank">Geonorge - Turrutebasen</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
