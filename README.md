@@ -1,5 +1,7 @@
 # TurDB - Norwegian Hiking Routes API
 
+# http://turdb.info.gf:3000/
+
 TurDB is a REST API that provides information about hiking routes in Norway. It allows users to find the closest hiking routes from given coordinates, helping hikers discover new trails and plan their outdoor adventures.
 
 ## Features
