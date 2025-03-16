@@ -122,10 +122,9 @@ app.get('/api/routes/nearby', async(req, res) => {
             let routeNumbers = [];
             if (row.rutenummers_text) {
                 const flattened = row.rutenummers_text
-                    .replace(/\{|\}/g, '')  // Remove ALL braces
-                    .replace(/,,/g, ',');   // Fix double commas
+                    .replace(/\{|\}/g, '')
+                    .replace(/,,/g, ',');
                     
-                // Split and clean
                 routeNumbers = flattened
                     .split(',')
                     .map(s => s.trim())
