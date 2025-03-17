@@ -37,7 +37,7 @@ app.get('/api/routes/nearby', async(req, res) => {
         if (!lat || !lng) {
             return res.status(400).json({ error: "Latitude and longitude are required" });
         }
-        console.time('sql');
+        console.time('sql query');
         const result = await pool.query(`
             WITH unnested_routes AS (
             SELECT 
@@ -97,9 +97,8 @@ app.get('/api/routes/nearby', async(req, res) => {
             FROM combined_routes
             ORDER BY min_distance, min_actual_distance;
         `, [lat, lng, limit]);
-        console.timeLog("sql");
-        
-        
+        console.timeEnd("sql query");
+        console.time("json parsing")
 
         const features = result.rows.map(row => {
             let geometryObj;
@@ -141,8 +140,9 @@ app.get('/api/routes/nearby', async(req, res) => {
                 }
             };
         });
+        console.timeEnd("json parsing")
         res.json({ features });
-        console.timeEnd("sql");
+        
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
