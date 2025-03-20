@@ -22,17 +22,12 @@ TurDB is a REST API that provides information about hiking routes in Norway. It 
    npm install
    ```
 
-3. Set up the PostgreSQL database:
-   - Ensure PostgreSQL is installed and running.
-   - Create a database named `turdb`.
-   - Update the database connection details in `server.js` if necessary.
-
-4. Start the server:
+3. Start the server:
    ```bash
    node server.js
    ```
 
-5. Access the API at `http://localhost:3000`.
+4. Access the API at `http://localhost:3000`.
 
 ## API Endpoints
 

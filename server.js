@@ -7,6 +7,7 @@ const port = 3000;
 app.use(express.static(path.join(__dirname, 'public')));
 let geoJsonData = null;
 let rutenummerPos = [];
+const bannedRoutes = ["PILEGRIM01", "osl"]
 
 // Load GeoJSON file when server starts
 function loadGeoJsonData() {
@@ -19,7 +20,10 @@ function loadGeoJsonData() {
 
         geoJsonData.features.forEach(feature => {
             const entry = new Map();
-            entry.set("rutenummer", feature.properties.rutenummer[0]);
+            const rutenummer = feature.properties.rutenummer[0];
+            if (bannedRoutes.includes(rutenummer)) return;
+
+            entry.set("rutenummer", rutenummer);
             entry.set("pos", [feature.geometry.coordinates[0][0], feature.geometry.coordinates[0][1]]);
             rutenummerPos.push(entry);
         })
@@ -112,7 +116,7 @@ app.get('/api/routes', async(req, res) => {
 
 app.get('/api/routes/nearby', async(req, res) => {
     try {
-        console.time("json parsing")
+        console.time("json parsing");
         const { lat, lng, limit = 5 } = req.query;
         
         if (!lat || !lng) {
@@ -128,27 +132,29 @@ app.get('/api/routes/nearby', async(req, res) => {
             });
         }
         
-        // Process each nearest route to combine all matching features
-        const routesWithDetails = nearestRoutes.map(route => {
+        // Process each nearest route to create GeoJSON features
+        const features = nearestRoutes.map(route => {
             // Find ALL matching features in geoJsonData for this route number
             const matchingFeatures = geoJsonData.features.filter(feature => 
                 feature.properties.rutenummer.includes(route.rutenummer)
             );
             
             if (matchingFeatures.length === 0) {
-                return route;
+                // Return a minimal feature if no matching features found
+                return {
+                    type: "Feature",
+                    properties: {
+                        rutenummer: route.rutenummer,
+                        distance_meters: route.distance_meters
+                    },
+                    geometry: null
+                };
             }
             
             // Get properties from the first matching feature
             const firstFeature = matchingFeatures[0];
-            const routeDetails = {
-                ...route,
-                rutenavn: firstFeature.properties.rutenavn || [],
-                gradering: firstFeature.properties.gradering || [],
-            };
             
             // Combine coordinates from all matching features
-            const allCoordinates = [];
             const lineStrings = [];
             
             matchingFeatures.forEach(feature => {
@@ -160,18 +166,28 @@ app.get('/api/routes/nearby', async(req, res) => {
                 }
             });
             
-            
-            // Create a combined geometry
-            routeDetails.geometry = {
-                type: 'MultiLineString',
-                coordinates: lineStrings
+            // Create a proper GeoJSON feature
+            return {
+                type: "Feature",
+                properties: {
+                    rutenummer: route.rutenummer,
+                    rutenavn: firstFeature.properties.rutenavn || [],
+                    gradering: firstFeature.properties.gradering || [],
+                    distance_meters: route.distance_meters
+                },
+                geometry: {
+                    type: 'MultiLineString',
+                    coordinates: lineStrings
+                }
             };
-            
-            return routeDetails;
         });
-        console.timeEnd("json parsing")
+        
+        console.timeEnd("json parsing");
+        
+        // Return a valid GeoJSON FeatureCollection
         res.json({
-            routes: routesWithDetails
+            type: "FeatureCollection",
+            features: features,
         });
     } catch (err) {
         console.error(err);
