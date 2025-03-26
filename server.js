@@ -22,32 +22,6 @@ function loadGeoJsonData() {
 
 loadGeoJsonData();
 
-function findClosestRouteNavn(lat, lng, limit = 5, featureType = null) {
-    if (!geoJsonData) return [];
-    
-    const filteredFeatures = featureType 
-        ? geoJsonData.features.filter(feature => feature.properties.type === featureType)
-        : geoJsonData.features;
-
-    if (filteredFeatures.length === 0) return [];
-
-    // Calculate distance for each route
-    const routesWithDistance = geoJsonData.features.map(feature => {
-        const distance = findMinimumDistanceToRoute(lat, lng, feature.geometry.coordinates[0]);
-        return {
-            name: feature.properties.name || 'Unnamed Route',
-            description: feature.properties.desc || '',
-            type: feature.properties.type || '',
-            distance: distance,
-            distance_meters: feature.properties.distance_meters || 0
-        };
-    });
-    
-    return routesWithDistance
-        .sort((a, b) => a.distance - b.distance)
-        .slice(0, limit);
-}
-
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3;
     const φ1 = lat1 * Math.PI / 180;
