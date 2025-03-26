@@ -1,99 +1,58 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const { Console } = require('console');
 const app = express();
 const port = 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 let geoJsonData = null;
-let rutenummerPos = [];
-const bannedRoutes = ["PILEGRIM01", "osl"]
 
 // Load GeoJSON file when server starts
 function loadGeoJsonData() {
     try {
-        const filePath = path.join(__dirname, 'AlleFotruter_Fixed.geojson');
-        console.log(`Loading GeoJSON data from ${filePath}...`);
-        
-        const data = fs.readFileSync(filePath, 'utf8');
+        console.time("Loading GeoJSON");
+        const data = fs.readFileSync(path.join(__dirname, 'OsloAkershusMerged.geojson'), 'utf8');
         geoJsonData = JSON.parse(data);
-
-        geoJsonData.features.forEach(feature => {
-            const entry = new Map();
-            const rutenummer = feature.properties.rutenummer[0];
-            if (bannedRoutes.includes(rutenummer)) return;
-
-            entry.set("rutenummer", rutenummer);
-            entry.set("pos", [feature.geometry.coordinates[0][0], feature.geometry.coordinates[0][1]]);
-            rutenummerPos.push(entry);
-        })
-        console.log(`GeoJSON data loaded successfully. Found ${geoJsonData.features.length} features.`);
-    } catch (err) {
-        console.error('Error loading GeoJSON data:', err);
+        console.timeEnd("Loading GeoJSON");
+        console.log(`Loaded ${geoJsonData.features.length} routes`);
+    } catch (error) {
+        console.error("Error loading GeoJSON file:", error);
     }
 }
 
 loadGeoJsonData();
 
-function findClosestRouteNumbers(lat, lng, limit = 5) {
-    if (!rutenummerPos || rutenummerPos.length === 0) {
-        console.error('Route position data not loaded or empty');
-        return [];
-    }
+function findClosestRouteNavn(lat, lng, limit = 5, featureType = null) {
+    if (!geoJsonData) return [];
     
-    // Convert coordinates to numbers to ensure proper comparison
-    const targetLat = parseFloat(lat);
-    const targetLng = parseFloat(lng);
-    
-    if (isNaN(targetLat) || isNaN(targetLng)) {
-        console.error('Invalid coordinates provided');
-        return [];
-    }
-    
-    // Calculate distance for each route position and store with its rutenummer
-    const routesWithDistance = rutenummerPos.map(entry => {
-        const pos = entry.get("pos");
-        const routeNumber = entry.get("rutenummer");
-        
-        // Some error checking to handle potential data issues
-        if (!pos || pos.length < 2 || !routeNumber) {
-            return { distance: Infinity, rutenummer: 'unknown' };
-        }
-        
-        // pos[1] is latitude, pos[0] is longitude (common GeoJSON format)
-        const distance = calculateDistance(targetLng, targetLat, pos[1], pos[0]);
-        
+    const filteredFeatures = featureType 
+        ? geoJsonData.features.filter(feature => feature.properties.type === featureType)
+        : geoJsonData.features;
+
+    if (filteredFeatures.length === 0) return [];
+
+    // Calculate distance for each route
+    const routesWithDistance = geoJsonData.features.map(feature => {
+        const distance = findMinimumDistanceToRoute(lat, lng, feature.geometry.coordinates[0]);
         return {
-            rutenummer: routeNumber,
-            distance: distance
+            name: feature.properties.name || 'Unnamed Route',
+            description: feature.properties.desc || '',
+            type: feature.properties.type || '',
+            distance: distance,
+            distance_meters: feature.properties.distance_meters || 0
         };
     });
     
-    // Filter out invalid entries and get distinct routes
-    const routeMap = new Map();
-    routesWithDistance.forEach(route => {
-        if (route.distance === Infinity || route.rutenummer === 'unknown') return;
-        
-        if (!routeMap.has(route.rutenummer) || 
-            routeMap.get(route.rutenummer).distance > route.distance) {
-            routeMap.set(route.rutenummer, route);
-        }
-    });
-    
-    // Convert to array, sort by distance, and limit results
-    const closestRoutes = Array.from(routeMap.values())
+    // Sort by distance and return the closest routes
+    return routesWithDistance
         .sort((a, b) => a.distance - b.distance)
         .slice(0, limit);
-    
-    return closestRoutes.map(route => ({
-        rutenummer: route.rutenummer,
-        distance_meters: Math.round(route.distance)
-    }));
 }
 
 // Helper function to calculate distance between two coordinates in meters (using Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // Earth's radius in meters
+    const R = 6371e3; // Earth's radius in meters
     const φ1 = lat1 * Math.PI / 180;
     const φ2 = lat2 * Math.PI / 180;
     const Δφ = (lat2 - lat1) * Math.PI / 180;
@@ -104,7 +63,22 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
               Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     
-    return R * c;
+    return R * c; // Distance in meters
+}
+
+// Helper function to find minimum distance from a point to a route
+function findMinimumDistanceToRoute(lat, lng, routeCoordinates) {
+    let minDistance = Infinity;
+    
+    for (const point of routeCoordinates) {
+        // GeoJSON coordinates are in [longitude, latitude] order
+        const distance = calculateDistance(lat, lng, point[1], point[0]);
+        if (distance < minDistance) {
+            minDistance = distance;
+        }
+    }
+    
+    return minDistance;
 }
 
 app.get('/api/routes', async(req, res) => {
@@ -117,82 +91,46 @@ app.get('/api/routes', async(req, res) => {
 app.get('/api/routes/nearby', async(req, res) => {
     try {
         console.time("json parsing");
-        const { lat, lng, limit = 5 } = req.query;
-        
+        const { lat, lng, limit = 5, featureType = null} = req.query;
+
         if (!lat || !lng) {
-            return res.status(400).json({ error: 'Latitude and longitude are required' });
+            return res.status(400).json({ error: 'lat and lng parameters are required' });
         }
-        
-        const nearestRoutes = findClosestRouteNumbers(lat, lng, parseInt(limit));
-        
-        if (nearestRoutes.length === 0) {
-            return res.status(404).json({ 
-                message: 'No routes found near the specified location',
-                params: { lat, lng, limit }
+
+        if (featureType && !["AnnenRute", "Fotrute", "Skiløype", "Sykkelrute"].includes(featureType)) {
+            return res.status(400).json({ 
+                error: 'Invalid feature type. Valid options are: AnnenRute, Fotrute, Skiløype, Sykkelrute'
             });
         }
         
-        // Process each nearest route to create GeoJSON features
-        const features = nearestRoutes.map(route => {
-            // Find ALL matching features in geoJsonData for this route number
-            const matchingFeatures = geoJsonData.features.filter(feature => 
-                feature.properties.rutenummer.includes(route.rutenummer)
-            );
-            
-            if (matchingFeatures.length === 0) {
-                // Return a minimal feature if no matching features found
-                return {
-                    type: "Feature",
-                    properties: {
-                        rutenummer: route.rutenummer,
-                        distance_meters: route.distance_meters
-                    },
-                    geometry: null
-                };
-            }
-            
-            // Get properties from the first matching feature
-            const firstFeature = matchingFeatures[0];
-            
-            // Combine coordinates from all matching features
-            const lineStrings = [];
-            
-            matchingFeatures.forEach(feature => {
-                // Handle different geometry types
-                if (feature.geometry.type === 'LineString') {
-                    lineStrings.push(feature.geometry.coordinates);
-                } else if (feature.geometry.type === 'MultiLineString') {
-                    lineStrings.push(...feature.geometry.coordinates);
-                }
-            });
-            
-            // Create a proper GeoJSON feature
-            return {
-                type: "Feature",
-                properties: {
-                    rutenummer: route.rutenummer,
-                    rutenavn: firstFeature.properties.rutenavn || [],
-                    gradering: firstFeature.properties.gradering || [],
-                    distance_meters: route.distance_meters
-                },
-                geometry: {
-                    type: 'MultiLineString',
-                    coordinates: lineStrings
-                }
-            };
-        });
+        const nearbyRoutes = findClosestRouteNavn(
+            parseFloat(lat),
+            parseFloat(lng),
+            parseInt(limit)
+        );
         
         console.timeEnd("json parsing");
-        
-        // Return a valid GeoJSON FeatureCollection
-        res.json({
-            type: "FeatureCollection",
-            features: features,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
+        res.json(nearbyRoutes);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({error: 'Internal server error'})
     }
 });
+
+app.get('/api/route-types', async(req, res) => {
+    if (!geoJsonData) {
+        return res.status(500).json({error: 'GeoJSON data not loaded'});
+    }
+    
+    // Extract unique types from features
+    const types = [...new Set(
+        geoJsonData.features
+            .map(feature => feature.properties.type)
+            .filter(type => type) // Remove null/undefined values
+    )];
+    
+    res.json(types);
+});
+
 
 app.listen(port, '0.0.0.0', () => console.log(`Server running at http://0.0.0.0:${port}`));

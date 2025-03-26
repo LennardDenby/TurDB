@@ -107,7 +107,7 @@
                         <li><code>lng</code> - Longitude (required)</li>
                         <li><code>limit</code> - Limit number of hikes to return (optional, default: 5)</li>
                     </ul>
-                    <p><strong>Description:</strong> Retrieves hiking routes near the specified coordinates.</p>
+                    <p><strong>Description:</strong> Retrieves hiking routes near the specified coordinates. The response includes GeoJSON features with combined coordinates for all matching routes.</p>
                     <p><strong>Example Request:</strong></p>
                     <div class="code-block">
                         GET http://turdb.info.gf:3000/api/routes/nearby?lat=59.66&lng=10.79&limit=5
