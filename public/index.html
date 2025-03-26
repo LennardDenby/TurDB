@@ -106,11 +106,32 @@
                         <li><code>lat</code> - Latitude (required)</li>
                         <li><code>lng</code> - Longitude (required)</li>
                         <li><code>limit</code> - Limit number of hikes to return (optional, default: 5)</li>
+                        <li><code>featureType</code> - Filter by route type (optional, valid options: <code>AnnenRute</code>, <code>Fotrute</code>, <code>Skiløype</code>, <code>Sykkelrute</code>)</li>
                     </ul>
                     <p><strong>Description:</strong> Retrieves hiking routes near the specified coordinates. The response includes GeoJSON features with combined coordinates for all matching routes.</p>
                     <p><strong>Example Request:</strong></p>
                     <div class="code-block">
-                        GET http://turdb.info.gf:3000/api/routes/nearby?lat=59.66&lng=10.79&limit=5
+                        GET http://turdb.info.gf:3000/api/routes/nearby?lat=59.66&lng=10.79&limit=5&featureType=Fotrute
+                    </div>
+                </div>
+
+                <div class="endpoint">
+                    <h3>Get Route Types</h3>
+                    <p><strong>Endpoint:</strong> <code>/api/route-types</code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <p><strong>Description:</strong> Retrieves a list of unique route types available in the dataset.</p>
+                    <p><strong>Example Request:</strong></p>
+                    <div class="code-block">
+                        GET http://turdb.info.gf:3000/api/route-types
+                    </div>
+                    <p><strong>Example Response:</strong></p>
+                    <div class="code-block">
+                        [
+                            "AnnenRute",
+                            "Fotrute",
+                            "Skiløype",
+                            "Sykkelrute"
+                        ]
                     </div>
                 </div>
             </div>

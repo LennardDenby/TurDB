@@ -7,6 +7,7 @@ TurDB is a REST API that provides information about hiking routes in Norway. It 
 ## Features
 - Retrieve all hiking routes.
 - Find hiking routes near specific coordinates, with GeoJSON features combining coordinates for matching routes.
+- Retrieve unique route types available in the dataset.
 - Data sourced from [Geonorge - Turrutebasen](https://kartkatalog.geonorge.no/metadata/turrutebasen/d1422d17-6d95-4ef1-96ab-8af31744dd63).
 
 ## Installation
@@ -48,7 +49,13 @@ TurDB is a REST API that provides information about hiking routes in Norway. It 
   - `lat` - Latitude (required)
   - `lng` - Longitude (required)
   - `limit` - Limit number of hikes to return (optional, default: 5)
+  - `featureType` - Filter by route type (optional, valid options: `AnnenRute`, `Fotrute`, `Skiløype`, `Sykkelrute`)
 - **Description:** Retrieves hiking routes near the specified coordinates. The response includes GeoJSON features with combined coordinates for all matching routes.
+
+### Get Route Types
+- **Endpoint:** `/api/route-types`
+- **Method:** `GET`
+- **Description:** Retrieves a list of unique route types available in the dataset.
 
 ## Example Usage
 
