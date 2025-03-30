@@ -38,15 +38,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function findMinimumDistanceToRoute(lat, lng, routeCoordinates) {
-    let minDistance = Infinity;
+    let distanceStart = calculateDistance(lat, lng, routeCoordinates[0][1], routeCoordinates[0][0]);
+    let distanceEnd = calculateDistance(lat, lng, routeCoordinates[routeCoordinates.length - 1][1], routeCoordinates[routeCoordinates.length - 1][0]);
     
-    for (const point of routeCoordinates) {
-        const distance = calculateDistance(lat, lng, point[1], point[0]);
-        if (distance < minDistance) {
-            minDistance = distance;
-        }
-    }
-    
+    let minDistance = Math.min(distanceStart, distanceEnd);
     return minDistance;
 }
 
@@ -60,7 +55,7 @@ app.get('/api/routes', async(req, res) => {
 app.get('/api/routes/nearby', async(req, res) => {
     try {
         console.time("json parsing");
-        const { lat, lng, limit = 5, featureType = null } = req.query;
+        const { lat, lng, limit = 5, featureType = null, minDistance = 0 } = req.query;
 
         if (!lat || !lng) {
             return res.status(400).json({ error: 'lat and lng parameters are required' });
@@ -74,14 +69,17 @@ app.get('/api/routes/nearby', async(req, res) => {
         
         const parsedLat = parseFloat(lat);
         const parsedLng = parseFloat(lng);
+        const parsedMinDistance = parseFloat(minDistance);
         
         if (isNaN(parsedLat) || isNaN(parsedLng)) {
             return res.status(400).json({ error: 'Invalid latitude or longitude values' });
         }
         
-        const filteredFeatures = featureType 
-            ? geoJsonData.features.filter(feature => feature.properties.type === featureType)
-            : geoJsonData.features;
+        const filteredFeatures = geoJsonData.features.filter(feature => {
+            const meetsTypeFilter = !featureType || feature.properties.type === featureType;
+            const meetsDistanceFilter = feature.properties.distance_meters >= parsedMinDistance;
+            return meetsTypeFilter && meetsDistanceFilter;
+        });
             
         if (filteredFeatures.length === 0) {
             return res.json({
@@ -93,23 +91,10 @@ app.get('/api/routes/nearby', async(req, res) => {
         }
 
         const featuresWithDistance = filteredFeatures.map(feature => {
-            let coordinates;
-            if (feature.geometry.type === "LineString") {
-                coordinates = feature.geometry.coordinates;
-            } else if (feature.geometry.type === "MultiLineString") {
- 
-                coordinates = feature.geometry.coordinates[0];
-            } else {
-                console.warn(`Unsupported geometry type: ${feature.geometry.type}`);
-                coordinates = [];
-            }
-            
+            let coordinates = feature.geometry.coordinates;
             const distance = findMinimumDistanceToRoute(parsedLat, parsedLng, coordinates);
-            
             const featureCopy = JSON.parse(JSON.stringify(feature));
-            
             featureCopy.properties.distance_to_point = distance;
-            
             return featureCopy;
         });
         
@@ -129,6 +114,49 @@ app.get('/api/routes/nearby', async(req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({error: 'Internal server error'})
+    }
+});
+
+app.get('/api/routes/withids', async(req, res) => {
+    try {
+        const { lat, lng, id } = req.query;
+        if (!lat || !lng || !id) {
+            return res.status(400).json({ error: 'lat, lng, and id parameters are required' });
+        }
+        const parsedLat = parseFloat(lat);
+        const parsedLng = parseFloat(lng);
+        const idList = Array.isArray(id) 
+            ? id.map(item => parseInt(item, 10)) 
+            : id.split(',').map(item => parseInt(item, 10));
+
+        if (isNaN(parsedLat) || isNaN(parsedLng)) {
+            return res.status(400).json({ error: 'Invalid latitude or longitude values' });
+        }
+        const features = geoJsonData.features.filter(f => 
+            idList.includes(parseInt(f.properties.fid, 10))
+        );
+        if (!features) {
+            return res.status(404).json({ error: 'Feature(s) not found' });
+        }
+        const featuresWithDistance = features.map(feature => {
+            let coordinates = feature.geometry.coordinates;
+            const distance = findMinimumDistanceToRoute(parsedLat, parsedLng, coordinates);
+            const featureCopy = JSON.parse(JSON.stringify(feature));
+            featureCopy.properties.distance_to_point = distance;
+            return featureCopy;
+        });
+
+        const response = {
+            type: "FeatureCollection",
+            name: geoJsonData.name,
+            crs: geoJsonData.crs,
+            features: featuresWithDistance
+        };
+
+        res.json(response);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
