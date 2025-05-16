@@ -134,24 +134,54 @@
                         ]
                     </div>
                 </div>
+                <div class="endpoint">
+                    <h3>Get Routes by IDs</h3>
+                    <p><strong>Endpoint:</strong> <code>/api/routes/withids</code></p>
+                    <p><strong>Method:</strong> GET</p>
+                    <p><strong>Parameters:</strong></p>
+                    <ul>
+                        <li><code>lat</code> - Latitude (required, for distance calculation)</li>
+                        <li><code>lng</code> - Longitude (required, for distance calculation)</li>
+                        <li><code>id</code> - Comma-separated list of route FIDs (required)</li>
+                    </ul>
+                    <p><strong>Description:</strong> Retrieves specific hiking routes based on their FIDs. The response includes GeoJSON features for the specified routes, along with the distance from the provided coordinates to the start/end of each route.</p>
+                    <p><strong>Example Request:</strong></p>
+                    <div class="code-block">
+                        GET http://turdb.info.gf:3000/api/routes/withids?lat=59.9&lng=10.7&id=123,456
+                    </div>
+                    <p><strong>Example Response:</strong></p>
+                    <div class="code-block">
+                        {<br>
+                        &nbsp;&nbsp;"type": "FeatureCollection",<br>
+                        &nbsp;&nbsp;"name": "OsloAkershusMergedGradering",<br>
+                        &nbsp;&nbsp;"crs": { ... },<br>
+                        &nbsp;&nbsp;"features": [<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;{<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "Feature",<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"properties": {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"fid": 123,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;... ,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"distance_to_point": 567.89<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"geometry": { ... }<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;},<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;{<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "Feature",<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"properties": {<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"fid": 456,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;... ,<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"distance_to_point": 1234.56<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;},<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"geometry": { ... }<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                        &nbsp;&nbsp;]<br>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
-
         <div class="row">
             <div class="col-lg-8 offset-lg-2">
-                <h2>Usage Examples</h2>
-                <h4>Using JavaScript Fetch API:</h4>
-                <div class="code-block">
-                    fetch('http://turdb.info.gf:3000/api/routes')<br>
-                    &nbsp;&nbsp;.then(response => response.json())<br>
-                    &nbsp;&nbsp;.then(data => console.log(data))<br>
-                    &nbsp;&nbsp;.catch(error => console.error('Error:', error));
-                </div>
-
-                <h4>Using cURL:</h4>
-                <div class="code-block">
-                    curl -X GET http://turdb.info.gf:3000/api/routes
-                </div>
                 
                 <div class="footer text-center">
                     <p>TurDB API - Created by Lennard Denby</p>

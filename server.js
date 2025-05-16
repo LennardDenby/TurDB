@@ -11,7 +11,7 @@ let geoJsonData = null;
 function loadGeoJsonData() {
     try {
         console.time("Loading GeoJSON");
-        const data = fs.readFileSync(path.join(__dirname, 'OsloAkershusMerged.geojson'), 'utf8');
+        const data = fs.readFileSync(path.join(__dirname, 'OsloAkershusMergedGradering.geojson'), 'utf8');
         geoJsonData = JSON.parse(data);
         console.timeEnd("Loading GeoJSON");
         console.log(`Loaded ${geoJsonData.features.length} routes`);
